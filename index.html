@@ -3,34 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fingerprint Authentication</title>
+    <title>Fingerprint Registration and Authentication</title>
 </head>
 <body>
-    <h2>Login with Fingerprint</h2>
+    <h2>Register and Authenticate with Fingerprint</h2>
+    
+    <!-- Register Button -->
+    <button id="registerBtn">Register Fingerprint</button>
+    
+    <!-- Authenticate Button -->
     <button id="authBtn">Authenticate with Fingerprint</button>
+    
     <p id="authResult"></p>
 
     <script>
+        const registerBtn = document.getElementById("registerBtn");
         const authBtn = document.getElementById("authBtn");
         const authResult = document.getElementById("authResult");
+        let credentialID = null; // Store credential ID after registration
 
+        // Register a new credential (this step needs to be done before authentication)
+        registerBtn.addEventListener("click", async () => {
+            try {
+                const publicKeyOptions = {
+                    challenge: new Uint8Array([0x8C, 0x2C, 0x68, 0x4F, 0xF1, 0x72, 0xC8, 0xAC]),
+                    rp: { name: "Example Corp" }, // Your site/app name
+                    user: {
+                        id: new Uint8Array(16),
+                        name: "example_user",
+                        displayName: "Example User"
+                    },
+                    pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+                    authenticatorSelection: {
+                        userVerification: "preferred"
+                    }
+                };
+
+                const credential = await navigator.credentials.create({ publicKey: publicKeyOptions });
+
+                // Save the credential ID for later authentication
+                credentialID = credential.rawId;
+
+                authResult.textContent = `Registration successful! Credential ID: ${credentialID}`;
+            } catch (error) {
+                authResult.textContent = `Registration failed: ${error.message}`;
+            }
+        });
+
+        // Authenticate using the previously registered credential
         authBtn.addEventListener("click", async () => {
-            if (!window.PublicKeyCredential) {
-                authResult.textContent = "WebAuthn API is not supported in this browser.";
+            if (!credentialID) {
+                authResult.textContent = "Please register first!";
                 return;
             }
 
             try {
-                const credential = await navigator.credentials.get({
-                    publicKey: {
-                        challenge: new Uint8Array([0x8C, 0x2C, 0x68, 0x4F, 0xF1, 0x72, 0xC8, 0xAC]),
-                        allowCredentials: [],
-                        userVerification: "preferred", // prompts for fingerprint or face ID
-                    }
-                });
+                const publicKeyCredentialRequestOptions = {
+                    challenge: new Uint8Array([0x8C, 0x2C, 0x68, 0x4F, 0xF1, 0x72, 0xC8, 0xAC]),
+                    allowCredentials: [{
+                        id: credentialID,
+                        type: "public-key"
+                    }],
+                    userVerification: "preferred",
+                };
 
-                // Display the authenticator's response (this is just for demonstration)
-                authResult.textContent = `Authentication successful: ID - ${credential.id}`;
+                const credential = await navigator.credentials.get({ publicKey: publicKeyCredentialRequestOptions });
+
+                authResult.textContent = `Authentication successful: Credential ID - ${credential.id}`;
             } catch (error) {
                 authResult.textContent = `Authentication failed: ${error.message}`;
             }
