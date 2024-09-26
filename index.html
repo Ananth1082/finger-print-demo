@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fingerprint Authentication</title>
+</head>
+<body>
+    <h2>Login with Fingerprint</h2>
+    <button id="authBtn">Authenticate with Fingerprint</button>
+    <p id="authResult"></p>
+
+    <script>
+        const authBtn = document.getElementById("authBtn");
+        const authResult = document.getElementById("authResult");
+
+        authBtn.addEventListener("click", async () => {
+            if (!window.PublicKeyCredential) {
+                authResult.textContent = "WebAuthn API is not supported in this browser.";
+                return;
+            }
+
+            try {
+                const credential = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: new Uint8Array([0x8C, 0x2C, 0x68, 0x4F, 0xF1, 0x72, 0xC8, 0xAC]),
+                        allowCredentials: [],
+                        userVerification: "preferred", // prompts for fingerprint or face ID
+                    }
+                });
+
+                // Display the authenticator's response (this is just for demonstration)
+                authResult.textContent = `Authentication successful: ID - ${credential.id}`;
+            } catch (error) {
+                authResult.textContent = `Authentication failed: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
